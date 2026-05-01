@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio Murena - Win95 Infected Screensaver</title>
+    <title>Studio Murena - Win95 Infected Screensaver (Black Edition)</title>
     
     <style>
         body {
             margin: 0; padding: 0;
-            background-color: #008080; /* Il classico grigio/blu teal di Windows 95 */
+            background-color: #000000; /* SFONDO NERO ASSOLUTO */
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden; 
         }
 
-        /* Effetto CRT monitor anni '90 */
         #crt-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 900; pointer-events: none;
@@ -38,6 +37,7 @@
 
         canvas {
             display: block; width: 100%; height: 100%; z-index: 10;
+            transition: filter 0.1s; /* Per sfarfallare fluido durante il glitch */
         }
     </style>
 </head>
@@ -58,6 +58,15 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // --- CARICAMENTO ASSET DEL GLITCH (Le Sprite) ---
+        const glitchImageNames = ['murena-idle.png', 'murena-jump.png', 'ai-boss-talk.png', 'ai-boss-angry.png'];
+        const glitchImages = [];
+        glitchImageNames.forEach(name => {
+            let img = new Image();
+            img.src = 'assets/' + name;
+            glitchImages.push(img);
+        });
+
         // --- GESTIONE LOGO "DVD" BOUNCING ---
         const logoImg = new Image();
         logoImg.src = 'assets/logo-studiomurena.png'; 
@@ -65,18 +74,16 @@
         let logo = {
             x: 100, y: 100,
             width: 0, height: 0,
-            dx: 3, dy: 3, // Velocità rimbalzo
-            hue: 0, // Colore attuale
+            dx: 3.5, dy: 3.5, 
+            hue: 0, 
             isGlitching: false,
-            scale: 0.3 // Grandezza del logo
+            scale: 0.36 // AUMENTATO DEL 20% (Era 0.30)
         };
 
-        // Cache per le versioni colorate del logo (per ottimizzare le performance)
         const logoTints = {};
 
         function getTintedLogo(hue) {
             if (logoTints[hue]) return logoTints[hue];
-            
             const tCanvas = document.createElement('canvas');
             const tCtx = tCanvas.getContext('2d');
             tCanvas.width = logoImg.width; tCanvas.height = logoImg.height;
@@ -98,53 +105,40 @@
         };
 
         // --- LA MURENA 3D PIPES ---
-        // Simuleremo il 3D disegnando sfere ombreggiate in sequenza
         let pipes = [];
         const pipeRadius = 35;
-        const pipeSpeed = 8;
+        const pipeSpeed = 9;
         
         class MurenaPipe {
             constructor() {
                 this.x = canvas.width / 2;
                 this.y = canvas.height / 2;
-                this.history = []; // Traccia il corpo
-                this.maxLength = 150; // Lunghezza prima che la coda inizi a sparire
-                
-                // Direzione: 0=Su, 1=Destra, 2=Giù, 3=Sinistra
+                this.history = []; 
+                this.maxLength = 150; 
                 this.dir = Math.floor(Math.random() * 4);
                 this.targetSteps = this.getRandomSteps();
                 this.currentSteps = 0;
             }
 
-            getRandomSteps() {
-                // Quanti passi fa prima di curvare (effetto labirinto)
-                return Math.floor(Math.random() * 40) + 15;
-            }
+            getRandomSteps() { return Math.floor(Math.random() * 40) + 15; }
 
             update() {
-                // Salva posizione passata
                 this.history.unshift({ x: this.x, y: this.y });
                 if (this.history.length > this.maxLength) this.history.pop();
 
-                // Movimento a griglia
                 if (this.dir === 0) this.y -= pipeSpeed;
                 if (this.dir === 1) this.x += pipeSpeed;
                 if (this.dir === 2) this.y += pipeSpeed;
                 if (this.dir === 3) this.x -= pipeSpeed;
 
                 this.currentSteps++;
-
-                // Curva casuale a 90 gradi quando raggiunge i passi
                 if (this.currentSteps >= this.targetSteps) {
                     this.currentSteps = 0;
                     this.targetSteps = this.getRandomSteps();
-                    
-                    // Gira a destra o sinistra (non può tornare indietro)
                     let turn = Math.random() > 0.5 ? 1 : -1;
                     this.dir = (this.dir + turn + 4) % 4;
                 }
 
-                // Warp sui bordi per non farla uscire dallo schermo
                 if (this.x < -pipeRadius) this.x = canvas.width + pipeRadius;
                 if (this.x > canvas.width + pipeRadius) this.x = -pipeRadius;
                 if (this.y < -pipeRadius) this.y = canvas.height + pipeRadius;
@@ -152,24 +146,19 @@
             }
 
             draw() {
-                // Disegna dal fondo alla testa per la sovrapposizione corretta
                 for (let i = this.history.length - 1; i >= 0; i--) {
                     let p = this.history[i];
-                    
-                    // La coda svanisce e si restringe
                     let life = 1 - (i / this.history.length);
                     let currentRadius = pipeRadius * (0.3 + 0.7 * life);
 
-                    // Sfumatura radiale per l'effetto 3D tubo
                     let grad = ctx.createRadialGradient(
                         p.x - currentRadius*0.3, p.y - currentRadius*0.3, currentRadius*0.1, 
                         p.x, p.y, currentRadius
                     );
                     
-                    // Palette Fluo: Viola e Verde Acido mischiati
-                    grad.addColorStop(0, '#ccff00'); // Verde acido brillante (luce)
-                    grad.addColorStop(0.3, '#8a2be2'); // Viola elettrico
-                    grad.addColorStop(1, '#110022'); // Ombra scura
+                    grad.addColorStop(0, '#ccff00'); 
+                    grad.addColorStop(0.3, '#8a2be2'); 
+                    grad.addColorStop(1, '#110022'); 
 
                     ctx.fillStyle = grad;
                     ctx.beginPath();
@@ -185,36 +174,24 @@
         function updateLogo() {
             if (logo.width === 0) return;
 
-            logo.x += logo.dx;
-            logo.y += logo.dy;
-
+            logo.x += logo.dx; logo.y += logo.dy;
             let hitWall = false;
 
-            // Rimbalzo X
             if (logo.x <= 0 || logo.x + logo.width >= canvas.width) {
-                logo.dx *= -1;
-                logo.x = Math.max(0, Math.min(logo.x, canvas.width - logo.width));
+                logo.dx *= -1; logo.x = Math.max(0, Math.min(logo.x, canvas.width - logo.width));
                 hitWall = true;
             }
-            // Rimbalzo Y
             if (logo.y <= 0 || logo.y + logo.height >= canvas.height) {
-                logo.dy *= -1;
-                logo.y = Math.max(0, Math.min(logo.y, canvas.height - logo.height));
+                logo.dy *= -1; logo.y = Math.max(0, Math.min(logo.y, canvas.height - logo.height));
                 hitWall = true;
             }
 
-            // Cambia colore al rimbalzo (ciclo HSL)
-            if (hitWall) {
-                logo.hue = (logo.hue + 75) % 360; 
-            }
+            if (hitWall) logo.hue = (logo.hue + 75) % 360; 
 
-            // CONTROLLO DISTANZA MURENA -> EFFETTO INFEZIONE/GLITCH
-            // Calcola la distanza tra il centro del logo e la testa della Murena
             let centerX = logo.x + logo.width / 2;
             let centerY = logo.y + logo.height / 2;
             let dist = Math.hypot(centerX - murena.x, centerY - murena.y);
-
-            logo.isGlitching = (dist < 250); // Se passa a meno di 250px, glitcha!
+            logo.isGlitching = (dist < 250); 
         }
 
         function drawLogo() {
@@ -222,52 +199,112 @@
             let tinted = getTintedLogo(logo.hue);
 
             if (logo.isGlitching) {
-                // GLITCH PESANTE: Sdoppiamento RGB e vibrazione
-                let shiftX = (Math.random() - 0.5) * 30;
-                let shiftY = (Math.random() - 0.5) * 30;
+                let shiftX = (Math.random() - 0.5) * 40;
+                let shiftY = (Math.random() - 0.5) * 40;
 
-                ctx.globalCompositeOperation = 'screen'; // Fonde i colori per un effetto glitch luminoso
-
-                // Canale Rosso
+                ctx.globalCompositeOperation = 'screen'; 
                 ctx.globalAlpha = 0.8;
-                ctx.shadowColor = "red"; ctx.shadowBlur = 10;
-                ctx.drawImage(getTintedLogo(0), logo.x + shiftX - 10, logo.y + shiftY, logo.width, logo.height);
+                ctx.shadowColor = "red"; ctx.shadowBlur = 15;
+                ctx.drawImage(getTintedLogo(0), logo.x + shiftX - 15, logo.y + shiftY, logo.width, logo.height);
                 
-                // Canale Blu/Verde
-                ctx.globalAlpha = 0.8;
-                ctx.shadowColor = "cyan"; ctx.shadowBlur = 10;
-                ctx.drawImage(getTintedLogo(180), logo.x - shiftX + 10, logo.y - shiftY, logo.width, logo.height);
+                ctx.shadowColor = "cyan"; ctx.shadowBlur = 15;
+                ctx.drawImage(getTintedLogo(180), logo.x - shiftX + 15, logo.y - shiftY, logo.width, logo.height);
 
-                ctx.globalCompositeOperation = 'source-over'; // Reset
-                ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0;
+                ctx.globalCompositeOperation = 'source-over'; 
+                ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
             } else {
-                // Disegno NORMALE
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 20;
                 ctx.shadowColor = `hsl(${logo.hue}, 100%, 50%)`;
                 ctx.drawImage(tinted, logo.x, logo.y, logo.width, logo.height);
                 ctx.shadowBlur = 0;
             }
         }
 
+        // --- SISTEMA CASCATA DI ERRORI ---
+        let globalGlitchFrames = 0;
+        let cascataArray = [];
+        let targetCascadeImg = null;
+        let cascadeX = 0, cascadeY = 0;
+
+        function triggerGlobalGlitch() {
+            if (globalGlitchFrames === 0 && Math.random() > 0.995) { // Molto raro
+                globalGlitchFrames = Math.floor(Math.random() * 60 + 50); // Dura circa 1.5 secondi
+                cascataArray = [];
+                // Seleziona un'immagine a caso da vomitare a cascata
+                let imgIndex = Math.floor(Math.random() * glitchImages.length);
+                targetCascadeImg = glitchImages[imgIndex];
+                cascadeX = Math.random() * (canvas.width - 256);
+                cascadeY = Math.random() * (canvas.height - 256);
+            }
+
+            if (globalGlitchFrames > 0) {
+                globalGlitchFrames--;
+
+                // Aggiunge frame all'array della cascata
+                if (targetCascadeImg && targetCascadeImg.complete) {
+                    cascataArray.push({
+                        img: targetCascadeImg,
+                        x: cascadeX,
+                        y: cascadeY,
+                        // Peschiamo un frame a caso dal foglio sprite 5x5 (o lo disegna tutto se non è 5x5)
+                        col: Math.floor(Math.random() * 5),
+                        row: Math.floor(Math.random() * 5)
+                    });
+
+                    // Muove a cascata stile Windows
+                    cascadeX += 25; cascadeY += 25;
+                    
+                    // Se sbatte sui bordi, riparte da un'altra parte
+                    if (cascadeX > canvas.width || cascadeY > canvas.height) {
+                        cascadeX = Math.random() * canvas.width;
+                        cascadeY = Math.random() * canvas.height;
+                        targetCascadeImg = glitchImages[Math.floor(Math.random() * glitchImages.length)];
+                    }
+                }
+
+                // Impazzisce lo schermo CSS (Invert + Colori sballati)
+                if (Math.random() > 0.5) {
+                    canvas.style.filter = `invert(1) hue-rotate(${Math.random() * 360}deg) saturate(3)`;
+                } else {
+                    canvas.style.filter = `contrast(2) brightness(1.5)`;
+                }
+            } else {
+                cascataArray = []; // Pulisce
+                canvas.style.filter = `none`; // Ripristina
+            }
+        }
+
+        function drawCascata() {
+            cascataArray.forEach(p => {
+                ctx.globalAlpha = 0.9;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#ff00ff"; // Alone magenta fluo
+
+                // Disegna un blocco 256x256 dell'immagine scelta
+                ctx.drawImage(p.img, p.col * 256, p.row * 256, 256, 256, p.x, p.y, 256, 256);
+            });
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
         function animazione() {
-            // Fondo Teal (Windows 95) con leggera scia
-            ctx.fillStyle = 'rgba(0, 128, 128, 0.2)'; // #008080 con opacità per lasciare le "tracce" fantasma classiche di Win95
+            // Fondo Nero con traccia
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // Opacità scura per il nero
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Update & Draw
             updateLogo();
             
             murena.update();
             murena.draw();
-            
-            // Il logo sta DAVANTI ai tubi
             drawLogo();
+
+            // Sovrascrive TUTTO con l'errore se è attivo
+            triggerGlobalGlitch();
+            drawCascata();
 
             requestAnimationFrame(animazione);
         }
 
-        // START!
         animazione();
 
     </script>
