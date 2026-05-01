@@ -17,8 +17,8 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 900; pointer-events: none;
             background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
             background-size: 100% 4px, 4px 100%;
             animation: flicker 0.15s infinite;
         }
@@ -37,7 +37,6 @@
 
         canvas {
             display: block; width: 100%; height: 100%; z-index: 10;
-            transition: filter 0.1s; /* Per sfarfallare fluido durante il glitch */
         }
     </style>
 </head>
@@ -77,7 +76,7 @@
             dx: 3.5, dy: 3.5, 
             hue: 0, 
             isGlitching: false,
-            scale: 0.36 // AUMENTATO DEL 20% (Era 0.30)
+            scale: 0.36 // Logo XL
         };
 
         const logoTints = {};
@@ -220,68 +219,68 @@
             }
         }
 
-        // --- SISTEMA CASCATA DI ERRORI ---
+        // --- SISTEMA CASCATA DI ERRORI ANIMATI ---
         let globalGlitchFrames = 0;
         let cascataArray = [];
         let targetCascadeImg = null;
         let cascadeX = 0, cascadeY = 0;
+        let spriteAnimFrame = 0; // Frame globale per l'animazione della spritesheet
 
         function triggerGlobalGlitch() {
-            if (globalGlitchFrames === 0 && Math.random() > 0.995) { // Molto raro
-                globalGlitchFrames = Math.floor(Math.random() * 60 + 50); // Dura circa 1.5 secondi
+            // Innesco raro del glitch a cascata
+            if (globalGlitchFrames === 0 && Math.random() > 0.995) { 
+                globalGlitchFrames = Math.floor(Math.random() * 80 + 70); // Dura un paio di secondi
                 cascataArray = [];
-                // Seleziona un'immagine a caso da vomitare a cascata
                 let imgIndex = Math.floor(Math.random() * glitchImages.length);
                 targetCascadeImg = glitchImages[imgIndex];
-                cascadeX = Math.random() * (canvas.width - 256);
-                cascadeY = Math.random() * (canvas.height - 256);
+                cascadeX = Math.random() * (canvas.width / 2);
+                cascadeY = Math.random() * (canvas.height / 2) - 100;
             }
 
             if (globalGlitchFrames > 0) {
                 globalGlitchFrames--;
 
-                // Aggiunge frame all'array della cascata
-                if (targetCascadeImg && targetCascadeImg.complete) {
+                // Gestisce l'animazione: avanza il frame della spritesheet ogni 4 tick (circa 15 fps)
+                if (globalGlitchFrames % 4 === 0) {
+                    spriteAnimFrame = (spriteAnimFrame + 1) % 25;
+                }
+
+                // Genera una nuova finestra "clonata" ogni 3 tick per dare molto più respiro
+                if (globalGlitchFrames % 3 === 0 && targetCascadeImg && targetCascadeImg.complete) {
                     cascataArray.push({
                         img: targetCascadeImg,
                         x: cascadeX,
-                        y: cascadeY,
-                        // Peschiamo un frame a caso dal foglio sprite 5x5 (o lo disegna tutto se non è 5x5)
-                        col: Math.floor(Math.random() * 5),
-                        row: Math.floor(Math.random() * 5)
+                        y: cascadeY
                     });
 
-                    // Muove a cascata stile Windows
-                    cascadeX += 25; cascadeY += 25;
+                    // SPAZIATURA MOLTO PIÙ AMPIA! (Prima era 25, ora 80 e 50)
+                    cascadeX += 80; cascadeY += 50;
                     
-                    // Se sbatte sui bordi, riparte da un'altra parte
+                    // Se esce dallo schermo, riparte cambiando anche immagine
                     if (cascadeX > canvas.width || cascadeY > canvas.height) {
-                        cascadeX = Math.random() * canvas.width;
-                        cascadeY = Math.random() * canvas.height;
+                        cascadeX = Math.random() * (canvas.width / 2);
+                        cascadeY = Math.random() * (canvas.height / 2) - 100;
                         targetCascadeImg = glitchImages[Math.floor(Math.random() * glitchImages.length)];
                     }
                 }
-
-                // Impazzisce lo schermo CSS (Invert + Colori sballati)
-                if (Math.random() > 0.5) {
-                    canvas.style.filter = `invert(1) hue-rotate(${Math.random() * 360}deg) saturate(3)`;
-                } else {
-                    canvas.style.filter = `contrast(2) brightness(1.5)`;
-                }
             } else {
-                cascataArray = []; // Pulisce
-                canvas.style.filter = `none`; // Ripristina
+                // Quando finisce, svuota l'array. Il background scuro le farà svanire organicamente
+                cascataArray = []; 
             }
         }
 
         function drawCascata() {
+            // Seleziona la colonna e la riga esatta in base al frame globale
+            let col = spriteAnimFrame % 5;
+            let row = Math.floor(spriteAnimFrame / 5);
+
             cascataArray.forEach(p => {
                 ctx.globalAlpha = 0.9;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 15;
                 ctx.shadowColor = "#ff00ff"; // Alone magenta fluo
 
-                // Disegna un blocco 256x256 dell'immagine scelta
-                ctx.drawImage(p.img, p.col * 256, p.row * 256, 256, 256, p.x, p.y, 256, 256);
+                // Disegna il frame corrente su TUTTE le copie della cascata, facendole animare all'unisono!
+                ctx.drawImage(p.img, col * 256, row * 256, 256, 256, p.x, p.y, 256, 256);
             });
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
@@ -289,7 +288,7 @@
 
         function animazione() {
             // Fondo Nero con traccia
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // Opacità scura per il nero
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // Questo fa il fade-out naturale
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             updateLogo();
@@ -298,7 +297,7 @@
             murena.draw();
             drawLogo();
 
-            // Sovrascrive TUTTO con l'errore se è attivo
+            // Calcola e disegna la cascata
             triggerGlobalGlitch();
             drawCascata();
 
