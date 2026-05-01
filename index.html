@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio Murena - Win95 Infected Screensaver (Black Edition)</title>
+    <title>Studio Murena - Win95 Infected Screensaver (Final Boss Edition)</title>
     
     <style>
         body {
             margin: 0; padding: 0;
-            background-color: #000000; /* SFONDO NERO ASSOLUTO */
+            background-color: #000000; 
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden; 
         }
@@ -57,13 +57,19 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- CARICAMENTO ASSET DEL GLITCH (Le Sprite) ---
-        const glitchImageNames = ['murena-idle.png', 'murena-jump.png', 'ai-boss-talk.png', 'ai-boss-angry.png'];
-        const glitchImages = [];
-        glitchImageNames.forEach(name => {
-            let img = new Image();
-            img.src = 'assets/' + name;
-            glitchImages.push(img);
+        // --- CARICAMENTO ASSET DEL GLITCH SEPARATI ---
+        // 1. Famiglia Boss
+        const bossImageNames = ['ai-boss-talk.png', 'ai-boss-angry.png'];
+        const bossImages = [];
+        bossImageNames.forEach(name => {
+            let img = new Image(); img.src = 'assets/' + name; bossImages.push(img);
+        });
+
+        // 2. Famiglia Murene
+        const murenaImageNames = ['murena-idle.png', 'murena-jump.png', 'murena-attack.png', 'murena-walk.png', 'murena-run.png'];
+        const murenaImages = [];
+        murenaImageNames.forEach(name => {
+            let img = new Image(); img.src = 'assets/' + name; murenaImages.push(img);
         });
 
         // --- GESTIONE LOGO "DVD" BOUNCING ---
@@ -71,12 +77,8 @@
         logoImg.src = 'assets/logo-studiomurena.png'; 
         
         let logo = {
-            x: 100, y: 100,
-            width: 0, height: 0,
-            dx: 3.5, dy: 3.5, 
-            hue: 0, 
-            isGlitching: false,
-            scale: 0.36 // Logo XL
+            x: 100, y: 100, width: 0, height: 0,
+            dx: 3.5, dy: 3.5, hue: 0, isGlitching: false, scale: 0.36
         };
 
         const logoTints = {};
@@ -104,16 +106,13 @@
         };
 
         // --- LA MURENA 3D PIPES ---
-        let pipes = [];
         const pipeRadius = 35;
         const pipeSpeed = 9;
         
         class MurenaPipe {
             constructor() {
-                this.x = canvas.width / 2;
-                this.y = canvas.height / 2;
-                this.history = []; 
-                this.maxLength = 150; 
+                this.x = canvas.width / 2; this.y = canvas.height / 2;
+                this.history = []; this.maxLength = 150; 
                 this.dir = Math.floor(Math.random() * 4);
                 this.targetSteps = this.getRandomSteps();
                 this.currentSteps = 0;
@@ -150,11 +149,7 @@
                     let life = 1 - (i / this.history.length);
                     let currentRadius = pipeRadius * (0.3 + 0.7 * life);
 
-                    let grad = ctx.createRadialGradient(
-                        p.x - currentRadius*0.3, p.y - currentRadius*0.3, currentRadius*0.1, 
-                        p.x, p.y, currentRadius
-                    );
-                    
+                    let grad = ctx.createRadialGradient(p.x - currentRadius*0.3, p.y - currentRadius*0.3, currentRadius*0.1, p.x, p.y, currentRadius);
                     grad.addColorStop(0, '#ccff00'); 
                     grad.addColorStop(0.3, '#8a2be2'); 
                     grad.addColorStop(1, '#110022'); 
@@ -177,18 +172,15 @@
             let hitWall = false;
 
             if (logo.x <= 0 || logo.x + logo.width >= canvas.width) {
-                logo.dx *= -1; logo.x = Math.max(0, Math.min(logo.x, canvas.width - logo.width));
-                hitWall = true;
+                logo.dx *= -1; logo.x = Math.max(0, Math.min(logo.x, canvas.width - logo.width)); hitWall = true;
             }
             if (logo.y <= 0 || logo.y + logo.height >= canvas.height) {
-                logo.dy *= -1; logo.y = Math.max(0, Math.min(logo.y, canvas.height - logo.height));
-                hitWall = true;
+                logo.dy *= -1; logo.y = Math.max(0, Math.min(logo.y, canvas.height - logo.height)); hitWall = true;
             }
 
             if (hitWall) logo.hue = (logo.hue + 75) % 360; 
 
-            let centerX = logo.x + logo.width / 2;
-            let centerY = logo.y + logo.height / 2;
+            let centerX = logo.x + logo.width / 2; let centerY = logo.y + logo.height / 2;
             let dist = Math.hypot(centerX - murena.x, centerY - murena.y);
             logo.isGlitching = (dist < 250); 
         }
@@ -198,97 +190,108 @@
             let tinted = getTintedLogo(logo.hue);
 
             if (logo.isGlitching) {
-                let shiftX = (Math.random() - 0.5) * 40;
-                let shiftY = (Math.random() - 0.5) * 40;
-
+                let shiftX = (Math.random() - 0.5) * 40; let shiftY = (Math.random() - 0.5) * 40;
                 ctx.globalCompositeOperation = 'screen'; 
                 ctx.globalAlpha = 0.8;
                 ctx.shadowColor = "red"; ctx.shadowBlur = 15;
                 ctx.drawImage(getTintedLogo(0), logo.x + shiftX - 15, logo.y + shiftY, logo.width, logo.height);
-                
                 ctx.shadowColor = "cyan"; ctx.shadowBlur = 15;
                 ctx.drawImage(getTintedLogo(180), logo.x - shiftX + 15, logo.y - shiftY, logo.width, logo.height);
-
                 ctx.globalCompositeOperation = 'source-over'; 
                 ctx.globalAlpha = 1.0; ctx.shadowBlur = 0;
             } else {
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = `hsl(${logo.hue}, 100%, 50%)`;
+                ctx.shadowBlur = 20; ctx.shadowColor = `hsl(${logo.hue}, 100%, 50%)`;
                 ctx.drawImage(tinted, logo.x, logo.y, logo.width, logo.height);
                 ctx.shadowBlur = 0;
             }
         }
 
-        // --- SISTEMA CASCATA DI ERRORI ANIMATI ---
+        // --- SISTEMA GLITCH EVENT (Boss Sparsi o Cascata Murene) ---
         let globalGlitchFrames = 0;
-        let cascataArray = [];
-        let targetCascadeImg = null;
+        let activeGlitchMode = null; // 'boss' o 'murena'
+        let glitchArray = [];
+        let targetGlitchImg = null;
+        let spriteAnimFrame = 0;
         let cascadeX = 0, cascadeY = 0;
-        let spriteAnimFrame = 0; // Frame globale per l'animazione della spritesheet
 
         function triggerGlobalGlitch() {
-            // Innesco raro del glitch a cascata
-            if (globalGlitchFrames === 0 && Math.random() > 0.995) { 
-                globalGlitchFrames = Math.floor(Math.random() * 80 + 70); // Dura un paio di secondi
-                cascataArray = [];
-                let imgIndex = Math.floor(Math.random() * glitchImages.length);
-                targetCascadeImg = glitchImages[imgIndex];
-                cascadeX = Math.random() * (canvas.width / 2);
-                cascadeY = Math.random() * (canvas.height / 2) - 100;
+            // Molto raro: circa 0.2% a frame -> scatta ogni tot secondi, come intercettore
+            if (globalGlitchFrames === 0 && Math.random() > 0.998) { 
+                
+                // Durata Random: 2, 3 o 4 secondi (a 60fps = 120, 180, 240 frames)
+                let duratePossibili = [120, 180, 240];
+                globalGlitchFrames = duratePossibili[Math.floor(Math.random() * duratePossibili.length)];
+                
+                glitchArray = [];
+                
+                // Lancia la monetina: Boss Sparsi (40%) o Murena a Cascata (60%)
+                if (Math.random() > 0.6) {
+                    // --- MODO BOSS: Sparsi a spot (4-8 istanze) ---
+                    activeGlitchMode = 'boss';
+                    targetGlitchImg = bossImages[Math.floor(Math.random() * bossImages.length)];
+                    let numberOfBosses = Math.floor(Math.random() * 5) + 4; // Da 4 a 8
+                    
+                    for (let i = 0; i < numberOfBosses; i++) {
+                        glitchArray.push({
+                            x: Math.random() * (canvas.width - 256),
+                            y: Math.random() * (canvas.height - 256)
+                        });
+                    }
+                } else {
+                    // --- MODO MURENA: Cascata trascinata ---
+                    activeGlitchMode = 'murena';
+                    targetGlitchImg = murenaImages[Math.floor(Math.random() * murenaImages.length)];
+                    cascadeX = Math.random() * (canvas.width / 2);
+                    cascadeY = Math.random() * (canvas.height / 2) - 100;
+                }
             }
 
             if (globalGlitchFrames > 0) {
                 globalGlitchFrames--;
 
-                // Gestisce l'animazione: avanza il frame della spritesheet ogni 4 tick (circa 15 fps)
-                if (globalGlitchFrames % 4 === 0) {
-                    spriteAnimFrame = (spriteAnimFrame + 1) % 25;
-                }
+                // Gestisce l'animazione della spritesheet (15 fps circa)
+                if (globalGlitchFrames % 4 === 0) spriteAnimFrame = (spriteAnimFrame + 1) % 25;
 
-                // Genera una nuova finestra "clonata" ogni 3 tick per dare molto più respiro
-                if (globalGlitchFrames % 3 === 0 && targetCascadeImg && targetCascadeImg.complete) {
-                    cascataArray.push({
-                        img: targetCascadeImg,
-                        x: cascadeX,
-                        y: cascadeY
-                    });
-
-                    // SPAZIATURA MOLTO PIÙ AMPIA! (Prima era 25, ora 80 e 50)
-                    cascadeX += 80; cascadeY += 50;
-                    
-                    // Se esce dallo schermo, riparte cambiando anche immagine
-                    if (cascadeX > canvas.width || cascadeY > canvas.height) {
-                        cascadeX = Math.random() * (canvas.width / 2);
-                        cascadeY = Math.random() * (canvas.height / 2) - 100;
-                        targetCascadeImg = glitchImages[Math.floor(Math.random() * glitchImages.length)];
+                // Solo in Modalità Murena generiamo le copie a cascata "in movimento"
+                if (activeGlitchMode === 'murena') {
+                    if (globalGlitchFrames % 3 === 0 && targetGlitchImg && targetGlitchImg.complete) {
+                        glitchArray.push({ x: cascadeX, y: cascadeY });
+                        cascadeX += 80; cascadeY += 50;
+                        
+                        // Se sbatte sui bordi, riparte con un'altra animazione Murena
+                        if (cascadeX > canvas.width || cascadeY > canvas.height) {
+                            cascadeX = Math.random() * (canvas.width / 2);
+                            cascadeY = Math.random() * (canvas.height / 2) - 100;
+                            targetGlitchImg = murenaImages[Math.floor(Math.random() * murenaImages.length)];
+                        }
                     }
                 }
             } else {
-                // Quando finisce, svuota l'array. Il background scuro le farà svanire organicamente
-                cascataArray = []; 
+                glitchArray = []; // Pulisce alla fine dell'evento
             }
         }
 
-        function drawCascata() {
-            // Seleziona la colonna e la riga esatta in base al frame globale
+        function drawGlitchEvent() {
+            if (glitchArray.length === 0 || !targetGlitchImg) return;
+
             let col = spriteAnimFrame % 5;
             let row = Math.floor(spriteAnimFrame / 5);
 
-            cascataArray.forEach(p => {
-                ctx.globalAlpha = 0.9;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = "#ff00ff"; // Alone magenta fluo
+            ctx.globalAlpha = 0.9;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#ff00ff"; // Glow magenta violento ma su sfondo nero
 
-                // Disegna il frame corrente su TUTTE le copie della cascata, facendole animare all'unisono!
-                ctx.drawImage(p.img, col * 256, row * 256, 256, 256, p.x, p.y, 256, 256);
+            glitchArray.forEach(p => {
+                ctx.drawImage(targetGlitchImg, col * 256, row * 256, 256, 256, p.x, p.y, 256, 256);
             });
+            
             ctx.shadowBlur = 0;
             ctx.globalAlpha = 1;
         }
 
         function animazione() {
             // Fondo Nero con traccia
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // Questo fa il fade-out naturale
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             updateLogo();
@@ -297,9 +300,8 @@
             murena.draw();
             drawLogo();
 
-            // Calcola e disegna la cascata
             triggerGlobalGlitch();
-            drawCascata();
+            drawGlitchEvent();
 
             requestAnimationFrame(animazione);
         }
