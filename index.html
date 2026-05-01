@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Studio Murena - Win95 Infected Screensaver (Final Boss Edition)</title>
+    <title>Studio Murena - Win95 Infected Screensaver (Ghost Layer Edition)</title>
     
     <style>
         body {
@@ -208,39 +208,37 @@
 
         // --- SISTEMA GLITCH EVENT (Boss Sparsi o Cascata Murene) ---
         let globalGlitchFrames = 0;
-        let activeGlitchMode = null; // 'boss' o 'murena'
+        let activeGlitchMode = null; 
         let glitchArray = [];
-        let targetGlitchImg = null;
         let spriteAnimFrame = 0;
         let cascadeX = 0, cascadeY = 0;
 
         function triggerGlobalGlitch() {
-            // Molto raro: circa 0.2% a frame -> scatta ogni tot secondi, come intercettore
             if (globalGlitchFrames === 0 && Math.random() > 0.998) { 
                 
-                // Durata Random: 2, 3 o 4 secondi (a 60fps = 120, 180, 240 frames)
                 let duratePossibili = [120, 180, 240];
                 globalGlitchFrames = duratePossibili[Math.floor(Math.random() * duratePossibili.length)];
                 
                 glitchArray = [];
                 
-                // Lancia la monetina: Boss Sparsi (40%) o Murena a Cascata (60%)
                 if (Math.random() > 0.6) {
-                    // --- MODO BOSS: Sparsi a spot (4-8 istanze) ---
+                    // --- MODO BOSS: Sparsi a spot (4-8 istanze), ognuno con la SUA faccia casuale ---
                     activeGlitchMode = 'boss';
-                    targetGlitchImg = bossImages[Math.floor(Math.random() * bossImages.length)];
-                    let numberOfBosses = Math.floor(Math.random() * 5) + 4; // Da 4 a 8
+                    let numberOfBosses = Math.floor(Math.random() * 5) + 4; 
                     
                     for (let i = 0; i < numberOfBosses; i++) {
-                        glitchArray.push({
-                            x: Math.random() * (canvas.width - 256),
-                            y: Math.random() * (canvas.height - 256)
-                        });
+                        let randomBoss = bossImages[Math.floor(Math.random() * bossImages.length)];
+                        if (randomBoss && randomBoss.complete) {
+                            glitchArray.push({
+                                x: Math.random() * (canvas.width - 256),
+                                y: Math.random() * (canvas.height - 256),
+                                img: randomBoss // Assegna un'immagine specifica a questa istanza
+                            });
+                        }
                     }
                 } else {
                     // --- MODO MURENA: Cascata trascinata ---
                     activeGlitchMode = 'murena';
-                    targetGlitchImg = murenaImages[Math.floor(Math.random() * murenaImages.length)];
                     cascadeX = Math.random() * (canvas.width / 2);
                     cascadeY = Math.random() * (canvas.height / 2) - 100;
                 }
@@ -249,40 +247,51 @@
             if (globalGlitchFrames > 0) {
                 globalGlitchFrames--;
 
-                // Gestisce l'animazione della spritesheet (15 fps circa)
                 if (globalGlitchFrames % 4 === 0) spriteAnimFrame = (spriteAnimFrame + 1) % 25;
 
                 // Solo in Modalità Murena generiamo le copie a cascata "in movimento"
                 if (activeGlitchMode === 'murena') {
-                    if (globalGlitchFrames % 3 === 0 && targetGlitchImg && targetGlitchImg.complete) {
-                        glitchArray.push({ x: cascadeX, y: cascadeY });
-                        cascadeX += 80; cascadeY += 50;
+                    if (globalGlitchFrames % 3 === 0) {
+                        // Sceglie un'animazione diversa AD OGNI STEP della cascata!
+                        let randomMurena = murenaImages[Math.floor(Math.random() * murenaImages.length)];
                         
-                        // Se sbatte sui bordi, riparte con un'altra animazione Murena
-                        if (cascadeX > canvas.width || cascadeY > canvas.height) {
-                            cascadeX = Math.random() * (canvas.width / 2);
-                            cascadeY = Math.random() * (canvas.height / 2) - 100;
-                            targetGlitchImg = murenaImages[Math.floor(Math.random() * murenaImages.length)];
+                        if (randomMurena && randomMurena.complete) {
+                            glitchArray.push({ 
+                                x: cascadeX, 
+                                y: cascadeY,
+                                img: randomMurena // Salva l'immagine specifica per questo elemento della cascata
+                            });
+                            cascadeX += 80; cascadeY += 50;
+                            
+                            if (cascadeX > canvas.width || cascadeY > canvas.height) {
+                                cascadeX = Math.random() * (canvas.width / 2);
+                                cascadeY = Math.random() * (canvas.height / 2) - 100;
+                            }
                         }
                     }
                 }
             } else {
-                glitchArray = []; // Pulisce alla fine dell'evento
+                glitchArray = []; 
             }
         }
 
         function drawGlitchEvent() {
-            if (glitchArray.length === 0 || !targetGlitchImg) return;
+            if (glitchArray.length === 0) return;
 
             let col = spriteAnimFrame % 5;
             let row = Math.floor(spriteAnimFrame / 5);
 
-            ctx.globalAlpha = 0.9;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "#ff00ff"; // Glow magenta violento ma su sfondo nero
+            // --- FANTASMI OPACIZZATI ---
+            // Abbassiamo l'opacità per farli amalgamare bene col fondo nero e la scia
+            ctx.globalAlpha = 0.35; 
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "rgba(255, 0, 255, 0.5)"; // Glow più soffuso per amalgamarsi
 
             glitchArray.forEach(p => {
-                ctx.drawImage(targetGlitchImg, col * 256, row * 256, 256, 256, p.x, p.y, 256, 256);
+                // Ogni "p" ora ha la sua "p.img", quindi la cascata è fatta di animazioni diverse!
+                if(p.img) {
+                    ctx.drawImage(p.img, col * 256, row * 256, 256, 256, p.x, p.y, 256, 256);
+                }
             });
             
             ctx.shadowBlur = 0;
@@ -290,18 +299,23 @@
         }
 
         function animazione() {
-            // Fondo Nero con traccia
             ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            updateLogo();
-            
+            // 1. Calcola la logica degli eventi Glitch
+            triggerGlobalGlitch();
+
+            // 2. DISEGNA I GLITCH (SFONDO / LIVELLO PIÙ BASSO)
+            // Facendolo qui, rimangono dietro ai tubi 3D e dietro al logo
+            drawGlitchEvent();
+
+            // 3. DISEGNA I TUBI (LIVELLO INTERMEDIO)
             murena.update();
             murena.draw();
-            drawLogo();
 
-            triggerGlobalGlitch();
-            drawGlitchEvent();
+            // 4. DISEGNA IL LOGO (PRIMO PIANO)
+            updateLogo();
+            drawLogo();
 
             requestAnimationFrame(animazione);
         }
